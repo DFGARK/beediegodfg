@@ -16,6 +16,8 @@ model School {
   email        String?
   logoUrl      String?
   primaryColor String    @default("#F5C400")
+  entryTime    String    @default("07:30")
+  lateTime     String    @default("08:00")
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   grades       Grade[]

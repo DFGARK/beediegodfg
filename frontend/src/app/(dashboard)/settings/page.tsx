@@ -90,7 +90,7 @@ export default function SettingsPage() {
 
   // School
   const [school, setSchool] = useState<School | null>(null);
-  const [schoolForm, setSchoolForm] = useState({ name: '', address: '', phone: '', email: '', primaryColor: '#F5C400', logoUrl: '' });
+  const [schoolForm, setSchoolForm] = useState({ name: '', address: '', phone: '', email: '', primaryColor: '#F5C400', logoUrl: '', entryTime: '07:30', lateTime: '08:00' });
   const [savingSchool, setSavingSchool] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -113,6 +113,7 @@ export default function SettingsPage() {
       name: data.name, address: data.address || '',
       phone: data.phone || '', email: data.email || '',
       primaryColor: data.primaryColor, logoUrl: data.logoUrl || '',
+      entryTime: data.entryTime || '07:30', lateTime: data.lateTime || '08:00',
     });
   };
 
@@ -337,6 +338,24 @@ export default function SettingsPage() {
                 className="w-9 h-9 rounded-lg border border-gray-200 dark:border-gray-700 shrink-0"
                 style={{ backgroundColor: schoolForm.primaryColor }}
               />
+            </div>
+          </div>
+
+          {/* Horario de entrada */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Hora de entrada
+                <span className="ml-1 text-[10px] font-normal text-gray-400">(marca PRESENT)</span>
+              </label>
+              <input type="time" {...sf('entryTime')} className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Hora limite tardanza
+                <span className="ml-1 text-[10px] font-normal text-gray-400">(despues = ABSENT)</span>
+              </label>
+              <input type="time" {...sf('lateTime')} className={inputCls} />
             </div>
           </div>
 

@@ -7,7 +7,7 @@ const registerAttendance = async (req, res) => {
 
     const student = await prisma.student.findUnique({
       where: { rfidUid },
-      include: { grade: true },
+      include: { grade: true, school: true },
     });
 
     if (!student) {
@@ -22,9 +22,18 @@ const registerAttendance = async (req, res) => {
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const [entryHour, entryMin] = (student.school.entryTime || '07:30').split(':').map(Number);
+    const [lateHour, lateMin] = (student.school.lateTime || '08:00').split(':').map(Number);
+    const entryThreshold = new Date(today);
+    entryThreshold.setHours(entryHour, entryMin, 0, 0);
     const lateThreshold = new Date(today);
-    lateThreshold.setHours(7, 30, 0, 0);
-    const status = now > lateThreshold ? 'LATE' : 'PRESENT';
+    lateThreshold.setHours(lateHour, lateMin, 0, 0);
+
+    let status;
+    if (now <= entryThreshold) status = 'PRESENT';
+    else if (now <= lateThreshold) status = 'LATE';
+    else status = 'ABSENT';
 
     const attendance = await prisma.attendance.upsert({
       where: { studentId_date: { studentId: student.id, date: today } },

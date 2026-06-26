@@ -10,10 +10,10 @@ const getSchool = async (req, res) => {
 
 const updateSchool = async (req, res) => {
   try {
-    const { name, address, phone, email, logoUrl, primaryColor } = req.body;
+    const { name, address, phone, email, logoUrl, primaryColor, entryTime, lateTime } = req.body;
     const school = await prisma.school.update({
       where: { id: req.user.schoolId },
-      data: { name, address, phone, email, logoUrl, primaryColor },
+      data: { name, address, phone, email, logoUrl, primaryColor, entryTime, lateTime },
     });
     res.json(school);
   } catch (err) { res.status(500).json({ error: err.message }); }

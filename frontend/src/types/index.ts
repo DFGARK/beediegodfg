@@ -7,6 +7,8 @@ export interface School {
   email?: string;
   logoUrl?: string;
   primaryColor: string;
+  entryTime: string;
+  lateTime: string;
 }
 
 export interface Grade {
