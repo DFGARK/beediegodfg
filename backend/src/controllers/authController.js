@@ -12,7 +12,7 @@ const login = async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role, schoolId: user.schoolId, firstName: user.firstName },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
     const { passwordHash, ...safe } = user;
     res.json({ token, user: safe });
