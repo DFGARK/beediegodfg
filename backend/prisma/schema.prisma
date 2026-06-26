@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model School {
+  id           String    @id @default(uuid())
+  name         String
+  code         String    @unique
+  address      String?
+  phone        String?
+  email        String?
+  logoUrl      String?
+  primaryColor String    @default("#F5C400")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  grades       Grade[]
+  students     Student[]
+  readers      Reader[]
+  users        User[]
+}
+
+model Grade {
+  id       String    @id @default(uuid())
+  name     String
+  section  String
+  year     Int       @default(2026)
+  schoolId String
+  school   School    @relation(fields: [schoolId], references: [id])
+  students Student[]
+
+  @@unique([name, section, year, schoolId])
+}
+
+model Student {
+  id          String       @id @default(uuid())
+  studentCode String       @unique
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  rfidUid     String?      @unique
+  birthDate   DateTime?
+  address     String?
+  isActive    Boolean      @default(true)
+  gradeId     String
+  grade       Grade        @relation(fields: [gradeId], references: [id])
+  schoolId    String
+  school      School       @relation(fields: [schoolId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  attendances Attendance[]
+  excuses     Excuse[]
+}
+
+model Reader {
+  id          String       @id
+  name        String
+  location    String?
+  ipAddress   String?
+  isOnline    Boolean      @default(false)
+  lastSeen    DateTime?
+  isActive    Boolean      @default(true)
+  schoolId    String
+  school      School       @relation(fields: [schoolId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  attendances Attendance[]
+  logs        ReaderLog[]
+}
+
+model Attendance {
+  id          String           @id @default(uuid())
+  date        DateTime         @db.Date
+  checkInTime DateTime?
+  status      AttendanceStatus @default(PRESENT)
+  isManual    Boolean          @default(false)
+  studentId   String
+  student     Student          @relation(fields: [studentId], references: [id])
+  readerId    String?
+  reader      Reader?          @relation(fields: [readerId], references: [id])
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  excuses     Excuse[]
+
+  @@unique([studentId, date])
+}
+
+model Excuse {
+  id           String      @id @default(uuid())
+  reason       String
+  description  String?
+  type         ExcuseType  @default(OTHER)
+  studentId    String
+  student      Student     @relation(fields: [studentId], references: [id])
+  attendanceId String?
+  attendance   Attendance? @relation(fields: [attendanceId], references: [id])
+  approvedBy   String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String?
+  role         UserRole @default(TEACHER)
+  isActive     Boolean  @default(true)
+  schoolId     String
+  school       School   @relation(fields: [schoolId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ReaderLog {
+  id        String   @id @default(uuid())
+  event     String
+  message   String?
+  rfidUid   String?
+  readerId  String
+  reader    Reader   @relation(fields: [readerId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  EXCUSED
+}
+
+enum ExcuseType {
+  MEDICAL
+  FAMILY
+  OFFICIAL
+  OTHER
+}
+
+enum UserRole {
+  ADMIN
+  DIRECTOR
+  TEACHER
+  SECRETARY
+}
