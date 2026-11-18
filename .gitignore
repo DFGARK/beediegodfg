@@ -33,3 +33,4 @@ Thumbs.db
 
 # Prisma (el cliente se genera en cada deploy, no hace falta versionarlo)
 backend/node_modules/.prisma/
+*.tsbuildinfo
