@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '@/types';
@@ -37,3 +38,16 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+/**
+ * true cuando la sesion guardada en el navegador ya se cargo.
+ * Evita mandar al login al recargar la pagina antes de leer la sesion.
+ */
+export function useAuthHydrated() {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    if (useAuthStore.persist.hasHydrated()) setHydrated(true);
+    return useAuthStore.persist.onFinishHydration(() => setHydrated(true));
+  }, []);
+  return hydrated;
+}

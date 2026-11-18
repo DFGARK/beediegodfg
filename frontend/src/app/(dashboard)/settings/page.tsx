@@ -264,16 +264,16 @@ export default function SettingsPage() {
   const inputCls = 'w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600';
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-4 sm:p-6 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-start sm:items-center justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-xl font-medium text-gray-900 dark:text-white">Configuracion</h1>
           <p className="text-sm text-gray-400">Datos del colegio y gestion del sistema</p>
         </div>
 
         {/* Dark mode toggle */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0 pt-1 sm:pt-0">
           {dark ? <Moon size={15} className="text-gray-400" /> : <Sun size={15} className="text-gray-400" />}
           <button
             onClick={toggleDark}
@@ -284,17 +284,17 @@ export default function SettingsPage() {
           >
             <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${dark ? 'translate-x-5' : 'translate-x-0'}`} />
           </button>
-          <span className="text-xs text-gray-400">{dark ? 'Oscuro' : 'Claro'}</span>
+          <span className="hidden sm:inline text-xs text-gray-400">{dark ? 'Oscuro' : 'Claro'}</span>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 dark:border-gray-800">
+      <div className="flex border-b border-gray-200 dark:border-gray-800 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
         {TABS.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`px-5 py-3 text-sm font-medium transition border-b-2 ${
+            className={`px-4 sm:px-5 py-3 text-sm font-medium transition border-b-2 whitespace-nowrap shrink-0 ${
               tab === key
                 ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white'
                 : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
@@ -307,7 +307,7 @@ export default function SettingsPage() {
 
       {/* ── TAB: Colegio ── */}
       {tab === 'school' && school && (
-        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6 max-w-xl space-y-4">
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-4 sm:p-6 max-w-xl space-y-4">
           {/* Logo */}
           <div>
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Logo del colegio</label>
@@ -387,7 +387,7 @@ export default function SettingsPage() {
           </div>
 
           {/* Horario de entrada */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Hora de entrada
@@ -428,47 +428,49 @@ export default function SettingsPage() {
           </div>
 
           <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Usuario</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Email</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Rol</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Estado</th>
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
-                {users.map(u => (
-                  <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 shrink-0">
-                          {u.firstName[0]}
-                        </div>
-                        <span className="font-medium text-gray-900 dark:text-white">{u.firstName} {u.lastName}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{u.email}</td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded font-medium">
-                        {ROLES.find(r => r.value === u.role)?.label || u.role}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded font-medium ${u.isActive ? 'text-green-700 border border-green-200' : 'text-red-500 border border-red-200'}`}>
-                        {u.isActive ? 'Activo' : 'Inactivo'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button onClick={() => deleteUser(u.id)} className="text-gray-300 hover:text-red-400 transition-colors">
-                        <Trash2 size={13} />
-                      </button>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Usuario</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Email</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Rol</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Estado</th>
+                    <th className="px-4 py-3" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                  {users.map(u => (
+                    <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 shrink-0">
+                            {u.firstName[0]}
+                          </div>
+                          <span className="font-medium text-gray-900 dark:text-white">{u.firstName} {u.lastName}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{u.email}</td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded font-medium">
+                          {ROLES.find(r => r.value === u.role)?.label || u.role}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-0.5 rounded font-medium ${u.isActive ? 'text-green-700 border border-green-200' : 'text-red-500 border border-red-200'}`}>
+                          {u.isActive ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button onClick={() => deleteUser(u.id)} className="text-gray-300 hover:text-red-400 transition-colors">
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
@@ -492,46 +494,48 @@ export default function SettingsPage() {
             </div>
           ) : (
             <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Estado</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Nombre</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Ubicacion</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">ID del lector</th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
-                  {readers.map(r => {
-                    const online = r.isOnline && !isStale(r);
-                    return (
-                      <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full shrink-0 ${online ? 'bg-green-400 animate-pulse' : 'bg-gray-300 dark:bg-gray-600'}`} />
-                            <span className={`text-xs font-medium ${online ? 'text-green-600' : 'text-gray-400'}`}>
-                              {online ? 'Online' : 'Offline'}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{r.name}</td>
-                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{r.location || '—'}</td>
-                        <td className="px-4 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">{r.id}</td>
-                        <td className="px-4 py-3">
-                          <button
-                            onClick={() => deleteReader(r.id)}
-                            className="text-gray-300 hover:text-red-400 transition-colors"
-                            title="Eliminar lector"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Estado</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Nombre</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Ubicacion</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">ID del lector</th>
+                      <th className="px-4 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                    {readers.map(r => {
+                      const online = r.isOnline && !isStale(r);
+                      return (
+                        <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${online ? 'bg-green-400 animate-pulse' : 'bg-gray-300 dark:bg-gray-600'}`} />
+                              <span className={`text-xs font-medium ${online ? 'text-green-600' : 'text-gray-400'}`}>
+                                {online ? 'Online' : 'Offline'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{r.name}</td>
+                          <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{r.location || '—'}</td>
+                          <td className="px-4 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">{r.id}</td>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => deleteReader(r.id)}
+                              className="text-gray-300 hover:text-red-400 transition-colors"
+                              title="Eliminar lector"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

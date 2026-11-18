@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -163,6 +163,8 @@ export default function StudentProfilePage() {
   const [excuses, setExcuses]   = useState<Excuse[]>([]);
   const [grades, setGrades]     = useState<Grade[]>([]);
   const [heatYear, setHeatYear] = useState(CURRENT_YEAR);
+  // En celular el mapa anual no cabe: se desplaza solo hasta los meses mas recientes
+  const heatScrollRef = useRef<HTMLDivElement>(null);
   const [tab, setTab]           = useState<'history' | 'excuses'>('history');
   const [page, setPage]         = useState(1);
   const [tooltip, setTooltip]   = useState<TooltipState | null>(null);
@@ -263,6 +265,11 @@ export default function StudentProfilePage() {
 
   // ── Guards ────────────────────────────────────────────────────────────────
 
+  useEffect(() => {
+    const el = heatScrollRef.current;
+    if (el) el.scrollLeft = el.scrollWidth;
+  }, [heatYear, loading, stats]);
+
   if (loading) return <div className="p-8 text-gray-400 text-sm">Cargando...</div>;
   if (error || !student || !stats) {
     return <div className="p-8 text-red-500 text-sm">{error || 'Error al cargar'}</div>;
@@ -297,7 +304,7 @@ export default function StudentProfilePage() {
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-4 sm:p-6 space-y-5">
 
       {/* ── Back link ── */}
       <Link
@@ -308,7 +315,7 @@ export default function StudentProfilePage() {
       </Link>
 
       {/* ── Header card ── */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
         <div className="flex items-start gap-4 flex-wrap">
           {/* Avatar */}
           <div className="w-16 h-16 rounded-xl bg-[#F5C400] flex items-center justify-center text-xl font-black text-black shrink-0">
@@ -381,7 +388,7 @@ export default function StudentProfilePage() {
       </div>
 
       {/* ── Stats cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 [&>*:last-child]:col-span-2 lg:[&>*:last-child]:col-span-1">
         {/* Dias registrados */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: '#6366f120' }}>
@@ -446,7 +453,7 @@ export default function StudentProfilePage() {
 
       {/* ── Heatmap ── */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-start sm:items-center justify-between gap-3 mb-4">
           <h2 className="text-sm font-semibold text-gray-900">Asistencia anual (Lunes–Viernes)</h2>
           <div className="flex items-center gap-1">
             {[CURRENT_YEAR, CURRENT_YEAR - 1].map(y => (
@@ -463,7 +470,7 @@ export default function StudentProfilePage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto pb-1">
+        <div ref={heatScrollRef} className="overflow-x-auto pb-1">
           <div className="relative inline-block">
             {/* Month labels row */}
             <div className="relative h-4 mb-1" style={{ width: `${(CELL + GAP) + heatmap.length * STEP}px` }}>
@@ -549,41 +556,43 @@ export default function StudentProfilePage() {
         {/* History tab */}
         {tab === 'history' && (
           <>
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Fecha</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Estado</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Hora entrada</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Lector</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {historyPage.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="text-center py-10 text-gray-400 text-sm">Sin registros para {heatYear}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Fecha</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Estado</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Hora entrada</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Lector</th>
                   </tr>
-                ) : historyPage.map(a => (
-                  <tr key={a.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-2.5 text-gray-700">
-                      {new Date(a.date).toLocaleDateString('es-GT')}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <AttendanceBadge status={a.status} />
-                    </td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-gray-500">
-                      {a.checkInTime
-                        ? new Date(a.checkInTime).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })
-                        : '—'}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-gray-500">
-                      {(a as unknown as { reader?: { name: string } }).reader?.name
-                        || (a.isManual ? 'Manual' : '—')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {historyPage.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="text-center py-10 text-gray-400 text-sm">Sin registros para {heatYear}</td>
+                    </tr>
+                  ) : historyPage.map(a => (
+                    <tr key={a.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-2.5 text-gray-700">
+                        {new Date(a.date).toLocaleDateString('es-GT')}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <AttendanceBadge status={a.status} />
+                      </td>
+                      <td className="px-4 py-2.5 font-mono text-xs text-gray-500">
+                        {a.checkInTime
+                          ? new Date(a.checkInTime).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })
+                          : '—'}
+                      </td>
+                      <td className="px-4 py-2.5 text-xs text-gray-500">
+                        {(a as unknown as { reader?: { name: string } }).reader?.name
+                          || (a.isManual ? 'Manual' : '—')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             {/* Pagination */}
             {totalPages > 1 && (
@@ -629,36 +638,38 @@ export default function StudentProfilePage() {
 
         {/* Excuses tab */}
         {tab === 'excuses' && (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Fecha</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Tipo</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Motivo</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Aprobado por</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {excuses.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="text-center py-10 text-gray-400 text-sm">Sin excusas registradas</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Fecha</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Tipo</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Motivo</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Aprobado por</th>
                 </tr>
-              ) : excuses.map(ex => (
-                <tr key={ex.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-2.5 text-xs text-gray-500 whitespace-nowrap">
-                    {new Date(ex.createdAt).toLocaleDateString('es-GT')}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">
-                      {EXCUSE_TYPES.find(t => t.value === ex.type)?.label ?? ex.type}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5 text-gray-700">{ex.reason}</td>
-                  <td className="px-4 py-2.5 text-xs text-gray-500">{ex.approvedBy || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {excuses.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="text-center py-10 text-gray-400 text-sm">Sin excusas registradas</td>
+                  </tr>
+                ) : excuses.map(ex => (
+                  <tr key={ex.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-2.5 text-xs text-gray-500 whitespace-nowrap">
+                      {new Date(ex.createdAt).toLocaleDateString('es-GT')}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                        {EXCUSE_TYPES.find(t => t.value === ex.type)?.label ?? ex.type}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-gray-700">{ex.reason}</td>
+                    <td className="px-4 py-2.5 text-xs text-gray-500">{ex.approvedBy || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -682,9 +693,9 @@ export default function StudentProfilePage() {
 
       {/* ── Modal: Editar estudiante ── */}
       <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Editar estudiante" size="lg">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {EDIT_FIELDS.map(({ label, key, required, type }) => (
-            <div key={key} className={key === 'address' ? 'col-span-2' : ''}>
+            <div key={key} className={key === 'address' ? 'sm:col-span-2' : ''}>
               <label className="block text-xs font-medium text-gray-700 mb-1">
                 {label}{required && <span className="text-red-500 ml-0.5">*</span>}
               </label>

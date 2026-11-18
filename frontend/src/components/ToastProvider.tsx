@@ -84,14 +84,14 @@ export default function ToastProvider() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+    <div className="fixed bottom-4 left-4 right-4 sm:left-auto z-50 flex flex-col items-stretch sm:items-end gap-2 pointer-events-none">
       {toasts.map(toast => {
         const s = STYLES[toast.type];
         const att = toast.attendance;
         return (
           <div
             key={toast.id}
-            className={`pointer-events-auto w-72 bg-white rounded-xl shadow-lg border border-gray-100 border-l-4 overflow-hidden ${s.border}`}
+            className={`pointer-events-auto w-full sm:w-72 bg-white rounded-xl shadow-lg border border-gray-100 border-l-4 overflow-hidden ${s.border}`}
           >
             <div className="px-3 py-2.5 flex items-center gap-3">
               <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${s.avatar}`}>
