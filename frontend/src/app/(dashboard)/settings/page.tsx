@@ -1,9 +1,11 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
-import { Save, Plus, Trash2, Upload, Moon, Sun } from 'lucide-react';
+import { Save, Plus, Trash2, Upload, Moon, Sun, ShieldAlert } from 'lucide-react';
 import api from '@/lib/axios';
 import { School, User, UserRole, Reader } from '@/types';
 import Modal from '@/components/ui/Modal';
+import SchoolLogo, { notifySchoolUpdated } from '@/components/SchoolLogo';
+import { useAuthStore } from '@/store/authStore';
 
 const ROLES: { value: UserRole; label: string }[] = [
   { value: 'ADMIN', label: 'Administrador' },
@@ -36,55 +38,57 @@ function isStale(reader: Reader) {
   return Date.now() - new Date(reader.lastSeen).getTime() > 5 * 60 * 1000;
 }
 
-function SettingsGate({ onUnlock }: { onUnlock: () => void }) {
-  const [value, setValue] = useState('');
-  const [error, setError] = useState(false);
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (value === '12345xd') {
-      sessionStorage.setItem('settings_unlocked', 'true');
-      onUnlock();
-    } else {
-      setError(true);
-      setValue('');
-    }
-  };
+// Acceso a Configuracion: solo usuarios con rol ADMIN (el backend tambien lo valida).
+function AdminOnlyNotice() {
   return (
-    <div className="flex-1 flex items-center justify-center bg-white dark:bg-gray-900">
-      <div className="w-full max-w-xs px-4">
-        <div className="mb-7">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white">Acceso restringido</h2>
-          <p className="text-sm text-gray-400 mt-1">Ingresa la contrasena de configuracion</p>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="password"
-            value={value}
-            onChange={e => { setValue(e.target.value); setError(false); }}
-            placeholder="••••••••"
-            autoFocus
-            required
-            className="w-full border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-gray-400 transition-colors"
-          />
-          {error && <p className="text-xs text-red-500">Contrasena incorrecta</p>}
-          <button
-            type="submit"
-            className="w-full bg-black dark:bg-white dark:text-black text-white rounded-lg py-2.5 text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
-          >
-            Acceder
-          </button>
-        </form>
+    <div className="flex-1 flex items-center justify-center p-6 min-h-[60vh]">
+      <div className="max-w-xs text-center space-y-2">
+        <ShieldAlert size={28} className="mx-auto text-gray-400" />
+        <h2 className="text-lg font-medium text-gray-900 dark:text-white">Acceso restringido</h2>
+        <p className="text-sm text-gray-400">Solo los administradores pueden modificar la configuracion.</p>
       </div>
     </div>
   );
 }
 
+const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+const LOGO_MAX_BYTES = 5 * 1024 * 1024; // archivo original
+const LOGO_MAX_SIDE = 512;              // px, se reduce manteniendo proporcion
+
+/** Lee la imagen y la reduce (sin deformar) para guardarla de forma ligera. */
+function processLogo(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+    reader.onload = () => {
+      const original = reader.result as string;
+      const img = new Image();
+      img.onerror = () => reject(new Error('El archivo no es una imagen valida'));
+      img.onload = () => {
+        const scale = Math.min(1, LOGO_MAX_SIDE / Math.max(img.width, img.height));
+        if (scale === 1 && file.size <= 1024 * 1024) return resolve(original);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(original);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        // JPG sin transparencia -> JPEG; PNG/WebP -> PNG para conservar transparencia
+        const out = file.type === 'image/jpeg'
+          ? canvas.toDataURL('image/jpeg', 0.9)
+          : canvas.toDataURL('image/png');
+        resolve(out);
+      };
+      img.src = original;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 type Tab = 'school' | 'users' | 'readers';
 
 export default function SettingsPage() {
-  const [unlocked, setUnlocked] = useState(() =>
-    typeof window !== 'undefined' && sessionStorage.getItem('settings_unlocked') === 'true'
-  );
+  const isAdmin = useAuthStore(state => state.user?.role === 'ADMIN');
   const [tab, setTab] = useState<Tab>('school');
   const { dark, toggle: toggleDark } = useTheme();
 
@@ -92,6 +96,8 @@ export default function SettingsPage() {
   const [school, setSchool] = useState<School | null>(null);
   const [schoolForm, setSchoolForm] = useState({ name: '', address: '', phone: '', email: '', primaryColor: '#F5C400', logoUrl: '', entryTime: '07:30', lateTime: '08:00' });
   const [savingSchool, setSavingSchool] = useState(false);
+  const [logoStatus, setLogoStatus] = useState<{ type: 'ok' | 'error'; msg: string } | null>(null);
+  const [savingLogo, setSavingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Users
@@ -128,29 +134,58 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    if (unlocked) {
+    if (isAdmin) {
       fetchSchool();
       fetchUsers();
       fetchReaders();
     }
-  }, [unlocked]);
+  }, [isAdmin]);
 
   // ── School ──────────────────────────────────────────
   const saveSchool = async () => {
     setSavingSchool(true);
     try {
       await api.put('/settings/school', schoolForm);
-      fetchSchool();
+      await fetchSchool();
+      notifySchoolUpdated();
     } catch (e) { console.error(e); }
     setSavingSchool(false);
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // El logo se guarda en cuanto se sube o se quita, para que persista al recargar.
+  const saveLogo = async (logoUrl: string | null) => {
+    setSavingLogo(true);
+    setLogoStatus(null);
+    try {
+      await api.put('/settings/school', { logoUrl });
+      setSchoolForm(prev => ({ ...prev, logoUrl: logoUrl || '' }));
+      notifySchoolUpdated();
+      setLogoStatus({ type: 'ok', msg: logoUrl ? 'Logo actualizado' : 'Logo eliminado' });
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { error?: string } } };
+      setLogoStatus({ type: 'error', msg: err.response?.data?.error || 'No se pudo guardar el logo' });
+    }
+    setSavingLogo(false);
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = ''; // permite volver a elegir el mismo archivo
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setSchoolForm(prev => ({ ...prev, logoUrl: reader.result as string }));
-    reader.readAsDataURL(file);
+    if (!LOGO_TYPES.includes(file.type)) {
+      setLogoStatus({ type: 'error', msg: 'Formato no permitido. Usa PNG, JPG o WebP.' });
+      return;
+    }
+    if (file.size > LOGO_MAX_BYTES) {
+      setLogoStatus({ type: 'error', msg: 'La imagen supera los 5 MB.' });
+      return;
+    }
+    try {
+      const dataUrl = await processLogo(file);
+      await saveLogo(dataUrl);
+    } catch (err) {
+      setLogoStatus({ type: 'error', msg: (err as Error).message });
+    }
   };
 
   const handleColorChange = (color: string) => {
@@ -218,7 +253,7 @@ export default function SettingsPage() {
       setReaderForm(prev => ({ ...prev, [key]: e.target.value })),
   });
 
-  if (!unlocked) return <SettingsGate onUnlock={() => setUnlocked(true)} />;
+  if (!isAdmin) return <AdminOnlyNotice />;
 
   const TABS: { key: Tab; label: string }[] = [
     { key: 'school', label: 'Informacion del Colegio' },
@@ -277,30 +312,40 @@ export default function SettingsPage() {
           <div>
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Logo del colegio</label>
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-center shrink-0">
-                {schoolForm.logoUrl
-                  ? <img src={schoolForm.logoUrl} alt="Logo" className="w-full h-full object-cover" />
-                  : <span className="text-xs text-gray-400">Sin logo</span>}
-              </div>
+              <SchoolLogo src={schoolForm.logoUrl} size={64} />
               <div className="space-y-1">
-                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center gap-2 text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300"
+                  disabled={savingLogo}
+                  className="flex items-center gap-2 text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300 disabled:opacity-50"
                 >
                   <Upload size={12} />
-                  Subir imagen
+                  {savingLogo ? 'Guardando...' : schoolForm.logoUrl ? 'Cambiar logo' : 'Subir logo'}
                 </button>
                 {schoolForm.logoUrl && (
                   <button
-                    onClick={() => setSchoolForm(prev => ({ ...prev, logoUrl: '' }))}
-                    className="text-xs text-gray-400 hover:text-red-500 transition px-1"
+                    onClick={() => saveLogo(null)}
+                    disabled={savingLogo}
+                    className="text-xs text-gray-400 hover:text-red-500 transition px-1 disabled:opacity-50"
                   >
                     Quitar logo
                   </button>
                 )}
+                <p className="text-[11px] text-gray-400">PNG, JPG o WebP. Maximo 5 MB.</p>
               </div>
             </div>
+            {logoStatus && (
+              <p className={`mt-2 text-xs ${logoStatus.type === 'ok' ? 'text-green-600' : 'text-red-500'}`}>
+                {logoStatus.msg}
+              </p>
+            )}
           </div>
 
           {[
