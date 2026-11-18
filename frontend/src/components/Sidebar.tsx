@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/axios';
+import SchoolLogo, { SCHOOL_UPDATED_EVENT } from '@/components/SchoolLogo';
 import {
   LayoutDashboard, Users, ClipboardCheck, FileText,
   Download, Radio, Settings, LogOut, Wifi, WifiOff,
@@ -16,7 +17,7 @@ const NAV = [
   { href: '/excuses', label: 'Excusas', icon: FileText },
   { href: '/reports', label: 'Reportes', icon: Download },
   { href: '/readers', label: 'Lectores', icon: Radio },
-  { href: '/settings', label: 'Configuracion', icon: Settings },
+  { href: '/settings', label: 'Configuracion', icon: Settings, adminOnly: true },
 ];
 
 function useLastSync() {
@@ -66,13 +67,19 @@ export default function Sidebar() {
   const { label: syncLabel, color: syncColor } = useLastSync();
 
   useEffect(() => {
-    api.get('/settings/school').then(r => {
-      if (r.data.logoUrl) setLogoUrl(r.data.logoUrl);
-      if (r.data.name) setSchoolName(r.data.name);
-      if (r.data.primaryColor) {
-        document.documentElement.style.setProperty('--beehive-primary', r.data.primaryColor);
-      }
-    }).catch(() => {});
+    const loadSchool = () => {
+      api.get('/settings/school').then(r => {
+        setLogoUrl(r.data.logoUrl || null);
+        if (r.data.name) setSchoolName(r.data.name);
+        if (r.data.primaryColor) {
+          document.documentElement.style.setProperty('--beehive-primary', r.data.primaryColor);
+        }
+      }).catch(() => {});
+    };
+    loadSchool();
+    // Se recarga cuando se cambia el logo o los datos desde Configuracion
+    window.addEventListener(SCHOOL_UPDATED_EVENT, loadSchool);
+    return () => window.removeEventListener(SCHOOL_UPDATED_EVENT, loadSchool);
   }, []);
 
   const handleLogout = () => {
@@ -85,15 +92,7 @@ export default function Sidebar() {
       {/* Header */}
       <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-800">
         <div className="flex items-center gap-3">
-          <div
-            className="w-9 h-9 rounded-lg overflow-hidden shrink-0 border border-gray-200 dark:border-gray-700 flex items-center justify-center"
-            style={{ backgroundColor: 'var(--beehive-primary, #F5C400)' }}
-          >
-            {logoUrl
-              ? <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
-              : <span className="text-xs font-black text-black">BI</span>
-            }
-          </div>
+          <SchoolLogo src={logoUrl} size={40} />
           <div className="min-w-0">
             <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{schoolName}</p>
             <p className="text-xs text-gray-400 dark:text-gray-500">Asistencias RFID</p>
@@ -103,7 +102,7 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-        {NAV.map(({ href, label, icon: Icon }) => {
+        {NAV.filter(item => !item.adminOnly || user?.role === 'ADMIN').map(({ href, label, icon: Icon }) => {
           const active = href === '/dashboard' ? pathname === href : pathname.startsWith(href);
           return (
             <Link

@@ -8,9 +8,22 @@ const getSchool = async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 };
 
+const ALLOWED_LOGO = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
+const MAX_LOGO_LENGTH = 3 * 1024 * 1024; // ~2 MB de imagen en base64
+
 const updateSchool = async (req, res) => {
   try {
-    const { name, address, phone, email, logoUrl, primaryColor, entryTime, lateTime } = req.body;
+    const { name, address, phone, email, primaryColor, entryTime, lateTime } = req.body;
+    let { logoUrl } = req.body;
+    if (logoUrl === '') logoUrl = null;
+    if (logoUrl) {
+      if (!ALLOWED_LOGO.test(logoUrl)) {
+        return res.status(400).json({ error: 'El logo debe ser una imagen PNG, JPG o WebP' });
+      }
+      if (logoUrl.length > MAX_LOGO_LENGTH) {
+        return res.status(400).json({ error: 'El logo es demasiado grande (maximo 2 MB)' });
+      }
+    }
     const school = await prisma.school.update({
       where: { id: req.user.schoolId },
       data: { name, address, phone, email, logoUrl, primaryColor, entryTime, lateTime },
