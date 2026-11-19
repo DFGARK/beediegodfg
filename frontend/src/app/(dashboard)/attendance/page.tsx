@@ -116,16 +116,26 @@ export default function AttendancePage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Asistencias</h1>
-          <p className="text-sm text-gray-500">Historial por fecha</p>
-        </div>
-        <div className="flex items-center gap-3">
+    <div className="p-4 sm:p-6 space-y-6">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Asistencias</h1>
+            <p className="text-sm text-gray-500">Historial por fecha</p>
+          </div>
+          {/* Boton visible en celular junto al titulo */}
           <button
             onClick={openManual}
-            className="flex items-center gap-2 bg-black text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-800 transition"
+            className="lg:hidden flex items-center gap-2 bg-black text-white rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-800 transition shrink-0"
+          >
+            <ClipboardList size={15} />
+            Registrar
+          </button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <button
+            onClick={openManual}
+            className="hidden lg:flex items-center gap-2 bg-black text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-800 transition"
           >
             <ClipboardList size={15} />
             Registrar manual
@@ -147,12 +157,12 @@ export default function AttendancePage() {
             type="date"
             value={date}
             onChange={e => setDate(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F5C400]"
+            className="flex-1 min-w-0 sm:flex-none border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#F5C400] bg-white"
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 [&>*:last-child]:col-span-2 lg:[&>*:last-child]:col-span-1">
         <StatsCard title="Total Estudiantes" value={stats.total} icon={Users} color="#6366f1" />
         <StatsCard title="Presentes" value={stats.present} icon={UserCheck} color="#22c55e" />
         <StatsCard title="Tarde" value={stats.late} icon={Clock} color="#F5C400" />
@@ -161,51 +171,83 @@ export default function AttendancePage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100">
+        <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-900">
             Registros del {new Date(date + 'T12:00:00').toLocaleDateString('es-GT', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </h2>
         </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Estudiante</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Grado</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Estado</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Hora</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Lector</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {loading ? (
-              <tr><td colSpan={5} className="text-center py-10 text-gray-400">Cargando...</td></tr>
-            ) : attendances.length === 0 ? (
-              <tr><td colSpan={5} className="text-center py-10 text-gray-400">Sin registros para esta fecha</td></tr>
-            ) : attendances.map(att => (
-              <tr key={att.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-[#F5C400] flex items-center justify-center text-xs font-bold text-black shrink-0">
-                      {att.student.firstName[0]}{att.student.lastName[0]}
-                    </div>
-                    <div>
-                      <a href={`/students/${att.student.id}`} className="font-medium text-gray-900 hover:underline text-sm">
-                        {att.student.firstName} {att.student.lastName}
-                      </a>
-                      <p className="text-xs text-gray-400">{att.student.studentCode}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-gray-600 text-sm">{att.student.grade.name} {att.student.grade.section}</td>
-                <td className="px-4 py-3"><AttendanceBadge status={att.status} /></td>
-                <td className="px-4 py-3 font-mono text-xs text-gray-500">
-                  {att.checkInTime ? new Date(att.checkInTime).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' }) : '—'}
-                </td>
-                <td className="px-4 py-3 text-xs text-gray-500">{att.reader?.name || (att.isManual ? 'Manual' : '—')}</td>
+        {/* Celular: lista en tarjetas */}
+        <ul className="md:hidden divide-y divide-gray-100">
+          {loading ? (
+            <li className="text-center py-10 text-gray-400 text-sm">Cargando...</li>
+          ) : attendances.length === 0 ? (
+            <li className="text-center py-10 text-gray-400 text-sm">Sin registros para esta fecha</li>
+          ) : attendances.map(att => (
+            <li key={att.id}>
+              <a href={`/students/${att.student.id}`} className="flex items-center gap-3 px-4 py-3 active:bg-gray-50">
+                <div className="w-9 h-9 rounded-full bg-[#F5C400] flex items-center justify-center text-xs font-bold text-black shrink-0">
+                  {att.student.firstName[0]}{att.student.lastName[0]}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-sm text-gray-900 truncate">{att.student.firstName} {att.student.lastName}</p>
+                  <p className="text-xs text-gray-400 truncate">
+                    {att.student.grade.name} {att.student.grade.section} · {att.reader?.name || (att.isManual ? 'Manual' : '—')}
+                  </p>
+                </div>
+                <div className="text-right shrink-0 space-y-1">
+                  <AttendanceBadge status={att.status} />
+                  <p className="text-[11px] text-gray-500 font-mono">
+                    {att.checkInTime ? new Date(att.checkInTime).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                  </p>
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+
+        {/* Tablet/computadora: tabla */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Estudiante</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Grado</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Estado</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Hora</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Lector</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {loading ? (
+                <tr><td colSpan={5} className="text-center py-10 text-gray-400">Cargando...</td></tr>
+              ) : attendances.length === 0 ? (
+                <tr><td colSpan={5} className="text-center py-10 text-gray-400">Sin registros para esta fecha</td></tr>
+              ) : attendances.map(att => (
+                <tr key={att.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-[#F5C400] flex items-center justify-center text-xs font-bold text-black shrink-0">
+                        {att.student.firstName[0]}{att.student.lastName[0]}
+                      </div>
+                      <div>
+                        <a href={`/students/${att.student.id}`} className="font-medium text-gray-900 hover:underline text-sm">
+                          {att.student.firstName} {att.student.lastName}
+                        </a>
+                        <p className="text-xs text-gray-400">{att.student.studentCode}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-gray-600 text-sm">{att.student.grade.name} {att.student.grade.section}</td>
+                  <td className="px-4 py-3"><AttendanceBadge status={att.status} /></td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-500">
+                    {att.checkInTime ? new Date(att.checkInTime).toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-500">{att.reader?.name || (att.isManual ? 'Manual' : '—')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Modal: Registrar asistencia manual */}

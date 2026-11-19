@@ -5,6 +5,13 @@ import { Search } from 'lucide-react';
 import api from '@/lib/axios';
 import { Student } from '@/types';
 
+export const OPEN_SEARCH_EVENT = 'open-global-search';
+
+/** Abre el buscador de estudiantes (en celular no hay atajo Ctrl+K). */
+export function openGlobalSearch() {
+  window.dispatchEvent(new Event(OPEN_SEARCH_EVENT));
+}
+
 export default function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -22,8 +29,13 @@ export default function GlobalSearch() {
       }
       if (e.key === 'Escape') setOpen(false);
     };
+    const openFromButton = () => setOpen(true);
     document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    window.addEventListener(OPEN_SEARCH_EVENT, openFromButton);
+    return () => {
+      document.removeEventListener('keydown', handler);
+      window.removeEventListener(OPEN_SEARCH_EVENT, openFromButton);
+    };
   }, []);
 
   useEffect(() => {
@@ -63,7 +75,7 @@ export default function GlobalSearch() {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-4 sm:pt-20 px-3 sm:px-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
       <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden">
         {/* Input */}
@@ -77,7 +89,8 @@ export default function GlobalSearch() {
             placeholder="Buscar estudiante por nombre o codigo..."
             className="flex-1 text-sm text-gray-900 placeholder-gray-400 outline-none bg-transparent"
           />
-          <kbd className="text-[10px] bg-gray-100 text-gray-400 rounded px-1.5 py-0.5 font-mono shrink-0">ESC</kbd>
+          <kbd className="hidden sm:inline text-[10px] bg-gray-100 text-gray-400 rounded px-1.5 py-0.5 font-mono shrink-0">ESC</kbd>
+          <button onClick={() => setOpen(false)} className="sm:hidden text-xs text-gray-500 px-1 shrink-0">Cerrar</button>
         </div>
 
         {/* Results */}
@@ -112,7 +125,7 @@ export default function GlobalSearch() {
         )}
 
         {/* Footer hint */}
-        <div className="px-4 py-2 border-t border-gray-100 flex items-center gap-3 text-[10px] text-gray-400">
+        <div className="hidden sm:flex px-4 py-2 border-t border-gray-100 items-center gap-3 text-[10px] text-gray-400">
           <span><kbd className="font-mono bg-gray-100 rounded px-1">↑↓</kbd> navegar</span>
           <span><kbd className="font-mono bg-gray-100 rounded px-1">↵</kbd> abrir</span>
           <span><kbd className="font-mono bg-gray-100 rounded px-1">Ctrl K</kbd> cerrar</span>

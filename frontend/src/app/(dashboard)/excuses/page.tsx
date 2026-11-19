@@ -88,70 +88,112 @@ export default function ExcusesPage() {
   };
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 space-y-5">
+      <div className="flex items-start sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Excusas</h1>
           <p className="text-sm text-gray-500">{excuses.length} registros</p>
         </div>
-        <button onClick={openModal} className="flex items-center gap-2 bg-black text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-800 transition">
-          <Plus size={16} /> Nueva excusa
+        <button onClick={openModal} className="flex items-center gap-2 bg-black text-white rounded-lg px-3 sm:px-4 py-2 text-sm font-medium hover:bg-gray-800 transition shrink-0">
+          <Plus size={16} /> <span className="sm:hidden">Nueva</span><span className="hidden sm:inline">Nueva excusa</span>
         </button>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Estudiante</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Tipo</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Motivo</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Fecha</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Aprobado por</th>
-              <th className="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {loading ? (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400">Cargando...</td></tr>
-            ) : excuses.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400">Sin excusas registradas</td></tr>
-            ) : excuses.map(ex => {
-              const tc = typeConfig[ex.type];
-              return (
-                <tr key={ex.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-[#F5C400] flex items-center justify-center text-xs font-bold text-black shrink-0">
-                        {ex.student.firstName[0]}{ex.student.lastName[0]}
+        {/* Celular: lista en tarjetas */}
+        <ul className="md:hidden divide-y divide-gray-100">
+          {loading ? (
+            <li className="text-center py-10 text-gray-400 text-sm">Cargando...</li>
+          ) : excuses.length === 0 ? (
+            <li className="text-center py-10 text-gray-400 text-sm">Sin excusas registradas</li>
+          ) : excuses.map(ex => {
+            const tc = typeConfig[ex.type];
+            return (
+              <li key={ex.id} className="px-4 py-3 space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[#F5C400] flex items-center justify-center text-xs font-bold text-black shrink-0">
+                    {ex.student.firstName[0]}{ex.student.lastName[0]}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-gray-900 text-sm truncate">{ex.student.firstName} {ex.student.lastName}</p>
+                    <p className="text-xs text-gray-400 truncate">
+                      {ex.student.grade?.name} {ex.student.grade?.section} · {new Date(ex.createdAt).toLocaleDateString('es-GT')}
+                    </p>
+                  </div>
+                  <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full shrink-0 ${tc.color}`}>{tc.label}</span>
+                  <button
+                    onClick={() => handleDelete(ex.id)}
+                    aria-label="Eliminar excusa"
+                    className="p-2 -mr-2 text-gray-300 hover:text-red-500 transition-colors shrink-0"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+                <div className="pl-12">
+                  <p className="text-sm text-gray-700 break-words">{ex.reason}</p>
+                  {ex.description && <p className="text-xs text-gray-400 break-words">{ex.description}</p>}
+                  {ex.approvedBy && <p className="text-[11px] text-gray-400 mt-1">Aprobado por {ex.approvedBy}</p>}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        {/* Tablet/computadora: tabla */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Estudiante</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Tipo</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Motivo</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Fecha</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">Aprobado por</th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {loading ? (
+                <tr><td colSpan={6} className="text-center py-10 text-gray-400">Cargando...</td></tr>
+              ) : excuses.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-10 text-gray-400">Sin excusas registradas</td></tr>
+              ) : excuses.map(ex => {
+                const tc = typeConfig[ex.type];
+                return (
+                  <tr key={ex.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-[#F5C400] flex items-center justify-center text-xs font-bold text-black shrink-0">
+                          {ex.student.firstName[0]}{ex.student.lastName[0]}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">{ex.student.firstName} {ex.student.lastName}</p>
+                          <p className="text-xs text-gray-400">{ex.student.grade?.name} {ex.student.grade?.section}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">{ex.student.firstName} {ex.student.lastName}</p>
-                        <p className="text-xs text-gray-400">{ex.student.grade?.name} {ex.student.grade?.section}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${tc.color}`}>{tc.label}</span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-700 max-w-xs">
-                    <p className="truncate">{ex.reason}</p>
-                    {ex.description && <p className="text-xs text-gray-400 truncate">{ex.description}</p>}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
-                    {new Date(ex.createdAt).toLocaleDateString('es-GT')}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{ex.approvedBy || '—'}</td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => handleDelete(ex.id)} className="text-gray-300 hover:text-red-500 transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${tc.color}`}>{tc.label}</span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700 max-w-xs">
+                      <p className="truncate">{ex.reason}</p>
+                      {ex.description && <p className="text-xs text-gray-400 truncate">{ex.description}</p>}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
+                      {new Date(ex.createdAt).toLocaleDateString('es-GT')}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 text-xs">{ex.approvedBy || '—'}</td>
+                    <td className="px-4 py-3">
+                      <button onClick={() => handleDelete(ex.id)} className="text-gray-300 hover:text-red-500 transition-colors">
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nueva excusa" size="md">

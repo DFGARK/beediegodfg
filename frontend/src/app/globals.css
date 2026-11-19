@@ -1,3 +1,27 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Ajustes para celular ───────────────────────────────────────────── */
+@media (max-width: 767px) {
+  /* Evita que iPhone haga zoom automatico al tocar un campo de texto */
+  input:not([type='checkbox']):not([type='radio']):not([type='color']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Las tablas se deslizan de lado en vez de aplastar las columnas */
+  table th,
+  table td {
+    white-space: nowrap;
+  }
+}
+
+/* Oculta la barra de scroll en filas deslizables (pestañas, filtros) */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

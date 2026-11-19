@@ -7,8 +7,9 @@ import api from '@/lib/axios';
 import SchoolLogo, { SCHOOL_UPDATED_EVENT } from '@/components/SchoolLogo';
 import {
   LayoutDashboard, Users, ClipboardCheck, FileText,
-  Download, Radio, Settings, LogOut, Wifi, WifiOff,
+  Download, Radio, Settings, LogOut, Wifi, WifiOff, X,
 } from 'lucide-react';
+import { create } from 'zustand';
 
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -19,6 +20,47 @@ const NAV = [
   { href: '/readers', label: 'Lectores', icon: Radio },
   { href: '/settings', label: 'Configuracion', icon: Settings, adminOnly: true },
 ];
+
+// Datos del colegio compartidos entre el Sidebar y la barra superior del celular
+const useSchoolInfo = create<{ name: string; logoUrl: string | null; loaded: boolean; load: () => void }>(set => ({
+  name: "Beehive Int'l",
+  logoUrl: null,
+  loaded: false,
+  load: () => {
+    api.get('/settings/school').then(r => {
+      set({ logoUrl: r.data.logoUrl || null, loaded: true, ...(r.data.name ? { name: r.data.name } : {}) });
+      if (r.data.primaryColor) {
+        document.documentElement.style.setProperty('--beehive-primary', r.data.primaryColor);
+      }
+    }).catch(() => {});
+  },
+}));
+
+function useSchool() {
+  const school = useSchoolInfo();
+  useEffect(() => {
+    if (!useSchoolInfo.getState().loaded) useSchoolInfo.getState().load();
+    const reload = () => useSchoolInfo.getState().load();
+    // Se recarga cuando se cambia el logo o los datos desde Configuracion
+    window.addEventListener(SCHOOL_UPDATED_EVENT, reload);
+    return () => window.removeEventListener(SCHOOL_UPDATED_EVENT, reload);
+  }, []);
+  return school;
+}
+
+/** Logo + nombre del colegio. `compact` se usa en la barra superior del celular. */
+function Brand({ compact = false }: { compact?: boolean }) {
+  const { name, logoUrl } = useSchool();
+  return (
+    <div className="flex items-center gap-3 min-w-0">
+      <SchoolLogo src={logoUrl} size={compact ? 32 : 40} />
+      <div className="min-w-0">
+        <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{name}</p>
+        {!compact && <p className="text-xs text-gray-400 dark:text-gray-500">Asistencias RFID</p>}
+      </div>
+    </div>
+  );
+}
 
 function useLastSync() {
   const [lastSeen, setLastSeen] = useState<Date | null>(null);
@@ -58,29 +100,25 @@ function useLastSync() {
   return { label, color };
 }
 
-export default function Sidebar() {
+interface SidebarProps {
+  /** Solo en celular/tablet: si el menu deslizable esta abierto */
+  open?: boolean;
+  onClose?: () => void;
+}
+
+export default function Sidebar({ open = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [schoolName, setSchoolName] = useState("Beehive Int'l");
   const { label: syncLabel, color: syncColor } = useLastSync();
 
+  // Cerrar el menu del celular con la tecla Escape
   useEffect(() => {
-    const loadSchool = () => {
-      api.get('/settings/school').then(r => {
-        setLogoUrl(r.data.logoUrl || null);
-        if (r.data.name) setSchoolName(r.data.name);
-        if (r.data.primaryColor) {
-          document.documentElement.style.setProperty('--beehive-primary', r.data.primaryColor);
-        }
-      }).catch(() => {});
-    };
-    loadSchool();
-    // Se recarga cuando se cambia el logo o los datos desde Configuracion
-    window.addEventListener(SCHOOL_UPDATED_EVENT, loadSchool);
-    return () => window.removeEventListener(SCHOOL_UPDATED_EVENT, loadSchool);
-  }, []);
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose?.(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
 
   const handleLogout = () => {
     logout();
@@ -88,16 +126,29 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-60 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-screen shrink-0">
+    <>
+    {/* Fondo oscuro detras del menu en celular */}
+    <div
+      onClick={onClose}
+      aria-hidden="true"
+      className={`lg:hidden fixed inset-0 z-40 bg-black/40 transition-opacity ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+    />
+    <aside
+      className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] transform transition-transform duration-200 ease-out
+        ${open ? 'translate-x-0 shadow-xl' : '-translate-x-full'}
+        lg:static lg:z-auto lg:w-60 lg:max-w-none lg:translate-x-0 lg:shadow-none lg:transition-none
+        bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-[100dvh] shrink-0`}
+    >
       {/* Header */}
-      <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-800">
-        <div className="flex items-center gap-3">
-          <SchoolLogo src={logoUrl} size={40} />
-          <div className="min-w-0">
-            <p className="font-medium text-sm text-gray-900 dark:text-white truncate">{schoolName}</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500">Asistencias RFID</p>
-          </div>
-        </div>
+      <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2">
+        <Brand />
+        <button
+          onClick={onClose}
+          aria-label="Cerrar menu"
+          className="lg:hidden p-2 -mr-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+        >
+          <X size={18} />
+        </button>
       </div>
 
       {/* Nav */}
@@ -108,7 +159,7 @@ export default function Sidebar() {
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+              className={`flex items-center gap-3 px-3 py-2.5 lg:py-2 rounded-lg text-sm transition-colors ${
                 active
                   ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium'
                   : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-white'
@@ -152,5 +203,8 @@ export default function Sidebar() {
         </button>
       </div>
     </aside>
+    </>
   );
 }
+
+Sidebar.Brand = Brand;

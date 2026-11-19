@@ -136,14 +136,14 @@ export default function StudentsPage() {
   });
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 space-y-5">
+      <div className="flex items-start sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-medium text-gray-900">Estudiantes</h1>
           <p className="text-sm text-gray-400">{students.length} estudiantes activos</p>
         </div>
-        <button onClick={() => openCreate()} className="flex items-center gap-2 bg-black text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-800 transition">
-          <Plus size={15} /> Nuevo estudiante
+        <button onClick={() => openCreate()} className="flex items-center gap-2 bg-black text-white rounded-lg px-3 sm:px-4 py-2 text-sm font-medium hover:bg-gray-800 transition shrink-0">
+          <Plus size={15} /> <span className="sm:hidden">Nuevo</span><span className="hidden sm:inline">Nuevo estudiante</span>
         </button>
       </div>
 
@@ -155,7 +155,7 @@ export default function StudentsPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             {unknownUids.map(u => (
-              <div key={u.uid} className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50">
+              <div key={u.uid} className="flex flex-wrap items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 text-xs bg-gray-50 max-w-full">
                 <span className="font-mono text-gray-700">{u.uid}</span>
                 <span className="text-gray-300">·</span>
                 <span className="text-gray-400">{u.count}x</span>
@@ -180,7 +180,7 @@ export default function StudentsPage() {
         </div>
       )}
 
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1 relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -202,55 +202,93 @@ export default function StudentsPage() {
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Estudiante</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Codigo</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Grado</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">RFID</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Contacto</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {loading ? (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400">Cargando...</td></tr>
-            ) : students.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400">Sin estudiantes</td></tr>
-            ) : students.map(s => (
-              <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 shrink-0">
-                      {s.firstName[0]}{s.lastName[0]}
-                    </div>
-                    <Link href={`/students/${s.id}`} className="font-medium text-gray-900 hover:text-black hover:underline">
-                      {s.firstName} {s.lastName}
-                    </Link>
-                  </div>
-                </td>
-                <td className="px-4 py-3 font-mono text-xs text-gray-500">{s.studentCode}</td>
-                <td className="px-4 py-3 text-gray-600">{s.grade.name} {s.grade.section}</td>
-                <td className="px-4 py-3">
-                  {s.rfidUid
-                    ? <span className="flex items-center gap-1 text-xs text-gray-600"><Wifi size={11} className="text-gray-400" />{s.rfidUid}</span>
-                    : <span className="text-xs text-gray-400">Sin RFID</span>}
-                </td>
-                <td className="px-4 py-3 text-xs text-gray-500">{s.email || s.phone || '—'}</td>
-                <td className="px-4 py-3">
-                  <button onClick={() => openEdit(s)} className="text-gray-300 hover:text-gray-700 transition-colors">
-                    <Edit2 size={14} />
-                  </button>
-                </td>
+        {/* Celular: lista en tarjetas */}
+        <ul className="md:hidden divide-y divide-gray-100">
+          {loading ? (
+            <li className="text-center py-10 text-gray-400 text-sm">Cargando...</li>
+          ) : students.length === 0 ? (
+            <li className="text-center py-10 text-gray-400 text-sm">Sin estudiantes</li>
+          ) : students.map(s => (
+            <li key={s.id} className="flex items-center gap-3 px-4 py-3">
+              <Link href={`/students/${s.id}`} className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 shrink-0">
+                  {s.firstName[0]}{s.lastName[0]}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-medium text-sm text-gray-900 truncate">{s.firstName} {s.lastName}</p>
+                  <p className="text-xs text-gray-400 truncate">
+                    <span className="font-mono">{s.studentCode}</span> · {s.grade.name} {s.grade.section}
+                  </p>
+                  <p className="text-[11px] text-gray-400 truncate flex items-center gap-1">
+                    {s.rfidUid
+                      ? <><Wifi size={10} className="shrink-0" />{s.rfidUid}</>
+                      : 'Sin RFID'}
+                  </p>
+                </div>
+              </Link>
+              <button
+                onClick={() => openEdit(s)}
+                aria-label="Editar estudiante"
+                className="p-2 -mr-2 text-gray-400 hover:text-gray-700 transition-colors shrink-0"
+              >
+                <Edit2 size={16} />
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        {/* Tablet/computadora: tabla */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Estudiante</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Codigo</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Grado</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">RFID</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Contacto</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400">Acciones</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {loading ? (
+                <tr><td colSpan={6} className="text-center py-10 text-gray-400">Cargando...</td></tr>
+              ) : students.length === 0 ? (
+                <tr><td colSpan={6} className="text-center py-10 text-gray-400">Sin estudiantes</td></tr>
+              ) : students.map(s => (
+                <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 shrink-0">
+                        {s.firstName[0]}{s.lastName[0]}
+                      </div>
+                      <Link href={`/students/${s.id}`} className="font-medium text-gray-900 hover:text-black hover:underline">
+                        {s.firstName} {s.lastName}
+                      </Link>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-500">{s.studentCode}</td>
+                  <td className="px-4 py-3 text-gray-600">{s.grade.name} {s.grade.section}</td>
+                  <td className="px-4 py-3">
+                    {s.rfidUid
+                      ? <span className="flex items-center gap-1 text-xs text-gray-600"><Wifi size={11} className="text-gray-400" />{s.rfidUid}</span>
+                      : <span className="text-xs text-gray-400">Sin RFID</span>}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-500">{s.email || s.phone || '—'}</td>
+                  <td className="px-4 py-3">
+                    <button onClick={() => openEdit(s)} className="text-gray-300 hover:text-gray-700 transition-colors">
+                      <Edit2 size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <Modal open={modalOpen} onClose={handleClose} title={editing ? 'Editar estudiante' : 'Nuevo estudiante'} size="lg">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
             { label: 'Codigo de estudiante', key: 'studentCode', required: true },
             { label: 'Nombre', key: 'firstName', required: true },
@@ -261,7 +299,7 @@ export default function StudentsPage() {
             { label: 'Fecha de nacimiento', key: 'birthDate', type: 'date' },
             { label: 'Direccion', key: 'address' },
           ].map(({ label, key, required, type, readOnly }) => (
-            <div key={key} className={key === 'address' ? 'col-span-2' : ''}>
+            <div key={key} className={key === 'address' ? 'sm:col-span-2' : ''}>
               <label className="block text-xs font-medium text-gray-700 mb-1">
                 {label}{required && <span className="text-red-500 ml-0.5">*</span>}
                 {readOnly && <span className="ml-1 text-[10px] text-gray-400 font-normal">(tarjeta fisica)</span>}
@@ -275,7 +313,7 @@ export default function StudentsPage() {
               />
             </div>
           ))}
-          <div className="col-span-2">
+          <div className="sm:col-span-2">
             <label className="block text-xs font-medium text-gray-700 mb-1">Grado <span className="text-red-500">*</span></label>
             <select
               value={form.gradeId}
